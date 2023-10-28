@@ -1,6 +1,7 @@
 # from Dense import*
 # from Metrics import*
 # from Preprocessing import*
+from BP_fromScratch import Dense, Input, Preprocessing, Metrics
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -59,7 +60,7 @@ class Sequential:
             Rec=[]
 
         if loss_type == "CategoricalCrossEntropy":
-            targets = encode(train_labels, self.sequence[-1].units) # label encoding
+            targets = Preprocessing.encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
             targets = train_labels
 
@@ -71,7 +72,7 @@ class Sequential:
                         Loss[epoch] = Loss[epoch] + loss/(len(targets))
 
                 if plot!=None:        
-                    acc, pre, rec, f1 = metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                    acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
                     Acc.append(acc)
                     Pre.append(pre)
                     Rec.append(rec)
