@@ -24,6 +24,8 @@ class Dense:
 
         if self.activation_type == "relu":
             return np.maximum(np.zeros(input.size), input)
+        elif self.activation_type == "linear":
+            return input
         elif self.activation_type == "sigmoid":
             return self.sigmoid(input)
         elif self.activation_type == "softmax":
@@ -31,18 +33,17 @@ class Dense:
 
     def activation_deriv(self, input):
 
-        if self.activation_type == "relu":
+        if self.activation_type == "relu" or self.activation_type == "linear":
             return np.ones(input.size)
         elif self.activation_type =="sigmoid":
             return self.sigmoid_deriv(input)
 
     def sigmoid(self, x):
-        return [1/(1 + np.exp(-y)) for y in x]
+        return np.array([1/(1 + np.exp(-y)) for y in x])
 
     def sigmoid_deriv(self, x):
-        return [self.sigmoid(y)*(1-self.sigmoid(y)) for y in x]
+        return np.array([self.sigmoid(y)*(1-self.sigmoid(y)) for y in x])
 
     def softmax(self, x):                           # interesting overflow caused by exp
         x[x > 1e2] = 1e2
-        return np.exp(x)/(np.matmul(np.ones(x.size), np.transpose(np.exp(x))))
-
+        return np.array(np.exp(x)/(np.matmul(np.ones(x.size), np.transpose(np.exp(x)))))
