@@ -3,10 +3,10 @@ import math
 
 class Dense:
 
-    def __init__(self, units, activation_func= ""):
+    def __init__(self, units, activation_func):
         self.units = units
         self.size = units
-        self.activation_type = activation_func # enum {relu,tanh, sigmoid, softmax, ...}
+        self.activation_type = activation_func 
 
     def build(self, input_shape):
         random_values = np.random.normal(0, 1, size=input_shape*self.units) # Gaussian initialization
@@ -25,7 +25,7 @@ class Dense:
         if self.activation_type == "relu":
             return np.maximum(np.zeros(input.size), input)
         elif self.activation_type == "sigmoid":
-            return self.vec_sigmoid()(input)
+            return self.sigmoid(input)
         elif self.activation_type == "softmax":
             return self.softmax(input)
 
@@ -34,23 +34,15 @@ class Dense:
         if self.activation_type == "relu":
             return np.ones(input.size)
         elif self.activation_type =="sigmoid":
-            return self.vec_sigmoid_deriv()(input)
+            return self.sigmoid_deriv(input)
 
     def sigmoid(self, x):
-        return 1 / (1 + math.exp(-x))
+        return [1/(1 + np.exp(-y)) for y in x]
 
     def sigmoid_deriv(self, x):
-        return (1 / (1 + math.exp(-x)))*(1-(1 / (1 + math.exp(-x))))
-
-    def vec_sigmoid(self):
-        return np.vectorize(self.sigmoid)
-
-    def vec_sigmoid_deriv(self):
-        return np.vectorize(self.sigmoid_deriv)
+        return [self.sigmoid(y)*(1-self.sigmoid(y)) for y in x]
 
     def softmax(self, x):                           # interesting overflow caused by exp
         x[x > 1e2] = 1e2
-        a = np.array([np.exp(y) for y in x])
-        return a/(np.matmul(np.ones(a.size), np.transpose(a)))
-
+        return np.exp(x)/(np.matmul(np.ones(a.size), np.transpose(np.exp(x))))
 
