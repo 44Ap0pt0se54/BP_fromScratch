@@ -1,7 +1,8 @@
 # from Dense import*
 # from Metrics import*
-# import matplotlib.pyplot as plt
 # from Preprocessing import*
+import numpy as np
+import matplotlib.pyplot as plt
 
 class Sequential:
 
