@@ -21,13 +21,8 @@ class Sequential:
 
     def normalize_array(self, arr):
         arr = np.round(arr, 6)
-        arr[arr > 10e2] = 10e2
-        arr[arr < 10e-2] = 10e-2
-        return arr
-
-    def normalize_output(self, x):
-        arr[arr < 0.1] = 0
-        arr[arr > 0.9] = 1
+        arr[arr > 10e6] = 10e6
+        arr[arr < 10e-6] = 10e-6
         return arr
 
     def feed(self, inputs, layer_index):
@@ -42,8 +37,8 @@ class Sequential:
         out_s.append(self.sequence[1].call(inputs))
         out_h.append(self.sequence[1].call_act(inputs))
         for index in range(2, layer_index):
-            out_s.append((self.sequence[index]).call(out_h[index-2]))
-            out_h.append((self.sequence[index]).call_act(out_h[index-2]))
+            out_s.append(self.sequence[index].call(out_h[index-2]))
+            out_h.append(self.sequence[index].call_act(out_h[index-2]))
         return (out_s, out_h)
         
     def predict(self, inputs):
@@ -60,7 +55,7 @@ class Sequential:
             Rec=[]
 
         if loss_type == "CategoricalCrossEntropy":
-            targets = Preprocessing.encode(train_labels, self.sequence[-1].units) # label encoding
+            targets = encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
             targets = train_labels
 
@@ -69,10 +64,10 @@ class Sequential:
                 for batch, target in zip(inputs, targets):
                     loss = self.epoch(batch, target, eta, loss_type)
                     if plot!=None:
-                        Loss[epoch] = Loss[epoch] + loss/(len(targets))
+                        Loss[epoch] = Loss[epoch] + loss
 
                 if plot!=None:        
-                    acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                    acc, pre, rec, f1 = metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
                     Acc.append(acc)
                     Pre.append(pre)
                     Rec.append(rec)
@@ -84,7 +79,7 @@ class Sequential:
                 for batch, target in zip(examples, labels):
                     self.epoch(batch, target, eta, loss_type, epoch)
         
-        Metrics.plot_metrics(Acc, Loss)
+        plot_metrics(Acc, Loss)
 
 
     def epoch(self, inputs, targets, eta, loss_type): # + METRIC, OPTIMIZER
@@ -120,10 +115,10 @@ class Sequential:
         elif loss_type == "CategoricalCrossEntropy":
 
             p = np.matmul(out_h, np.transpose(targets))
-            if p < 0.01:
-                p = 0.01
-            loss = -np.log(p) # to avoid 0 division
-
+            if p < 0.001:
+                p = 0.001 # to avoid 0 division
+            loss = -np.log(p) 
+            
             self.small_delta[len(self.sequence)-2] = -(1 - p)*targets
             delta = self.small_delta[len(self.sequence)-2]
             
