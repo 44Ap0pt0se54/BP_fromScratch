@@ -84,7 +84,7 @@ class Sequential:
                 for batch, target in zip(examples, labels):
                     self.epoch(batch, target, eta, loss_type, epoch)
         
-        plot_metrics(Acc, Loss)
+        Metrics.plot_metrics(Acc, Loss)
 
 
     def epoch(self, inputs, targets, eta, loss_type): # + METRIC, OPTIMIZER
