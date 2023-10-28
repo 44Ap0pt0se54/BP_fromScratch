@@ -44,5 +44,5 @@ class Dense:
 
     def softmax(self, x):                           # interesting overflow caused by exp
         x[x > 1e2] = 1e2
-        return np.exp(x)/(np.matmul(np.ones(a.size), np.transpose(np.exp(x))))
+        return np.exp(x)/(np.matmul(np.ones(x.size), np.transpose(np.exp(x))))
 
