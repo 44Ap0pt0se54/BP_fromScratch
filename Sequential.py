@@ -54,7 +54,7 @@ class Sequential:
         if loss_type == "CategoricalCrossEntropy":
             targets = encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
-            targets = train_labels
+            targets = encode(train_labels, self.sequence[-1].units) ##### replace by train_labels
         for epoch in range(num_epochs):
             if batch_size == None:
                 for batch, target in zip(inputs, targets):
@@ -94,7 +94,10 @@ class Sequential:
         if loss_type == "MSE":
 
             errors = np.array(out_h-targets)
-            loss = np.square(errors)/2
+            if errors.size > 1:
+                loss = np.matmul(errors, np.transpose(errors))/2
+            else:
+                loss = np.square(errors)/2
 
             self.small_delta[len(self.sequence)-2] = np.multiply(layer.activation_deriv(out_s),errors)
             self.small_delta[len(self.sequence)-2] = (self.small_delta[len(self.sequence)-2]).reshape((self.small_delta[len(self.sequence)-2]).size, 1) # transposed reshape
@@ -115,17 +118,15 @@ class Sequential:
             if p < 0.00001:
                 p = 0.00001 # to avoid 0 division
             loss = -np.log(p) 
-            # print("out_h ", out_h)
-            # print("targets ", targets)
-            # print("proba ", p)
+            
             self.small_delta[len(self.sequence)-2] = -(1 - p)*targets
             delta = self.small_delta[len(self.sequence)-2]
             
             layer.w = layer.w - np.clip((eta)*np.outer(np.transpose(in_x), delta), -clip_grad, clip_grad)
             layer.b = layer.b - np.clip((eta)*delta, -clip_grad, clip_grad)
 
-        layer.w = np.clip(layer.w, -1e1, 1e1)
-        layer.b = np.clip(layer.b, -1e1, 1e1)
+        layer.w = np.clip(layer.w, -1, 1)
+        layer.b = np.clip(layer.b, -1, 1)
                                                     
         for layer_index in reversed(range(1,len(self.sequence)-1)):
 
@@ -145,8 +146,8 @@ class Sequential:
             
             elif loss_type == "CategoricalCrossEntropy":
                 #print(np.max(layer.call(inputs)) == np.max(out_s))
-                # print("max w ", np.max(layer.w))
-                # print("max out_s", np.max(out_s))
+                #print("max w ", np.max(layer.w))
+                #print("max out_s", np.max(out_s))
                 #print("max layer.activation_deriv(out_s/np.max(out_s)) ", np.max(layer.activation_deriv(out_s)))
                 self.small_delta[layer_index-1] = np.multiply(layer.activation_deriv(out_s).reshape(layer.activation_deriv(out_s).size, 1),np.matmul(layer_above.w,self.small_delta[layer_index].reshape(self.small_delta[layer_index].size, 1)))
 
@@ -162,8 +163,8 @@ class Sequential:
                 layer.w = layer.w - (eta)*np.clip(np.transpose(np.outer(delta, in_x)), -clip_grad, clip_grad)
                 layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
-            layer.w = np.clip(layer.w, -1e1, 1e1)
-            layer.b = np.clip(layer.b, -1e1, 1e1)
+            layer.w = np.clip(layer.w, -1, 1)
+            layer.b = np.clip(layer.b, -1, 1)
 
         return loss
 
