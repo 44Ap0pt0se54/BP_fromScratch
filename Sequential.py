@@ -52,22 +52,26 @@ class Sequential:
             Rec=[]
 
         if loss_type == "CategoricalCrossEntropy":
-            targets = Preprocessing.encode(train_labels, self.sequence[-1].units) # label encoding
+            targets = encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
-            targets = Preprocessing.encode(train_labels, self.sequence[-1].units) ##### replace by train_labels
+            targets = encode(train_labels, self.sequence[-1].units) ##### replace by train_labels if not classification problem
         for epoch in range(num_epochs):
+            progress_bar = tqdm(total=inputs[:,0].size, position=0, leave=True, desc="Epoch "+str(epoch+1)+"/"+str(num_epochs))
             if batch_size == None:
                 for batch, target in zip(inputs, targets):
                     loss = self.epoch(batch, target, eta, loss_type, clip_grad)
+                    progress_bar.update(1)
                     if plot!=None:
-                        Loss[epoch] = Loss[epoch] + loss
+                        Loss[epoch] = Loss[epoch] + loss/inputs[:,0].size
+
+                progress_bar.close()
+                print("Epoch ", epoch+1, " completed")
             
                 if plot!=None:        
-                    acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                    acc, pre, rec, f1 = metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
                     Acc.append(acc)
                     Pre.append(pre)
                     Rec.append(rec)
-                print("epoch ", epoch, " passed")
 
             else:
                 shuffle_index = np.random.permutation(batch_size)
@@ -76,7 +80,7 @@ class Sequential:
                 for batch, target in zip(examples, labels):
                     self.epoch(batch, target, eta, loss_type, epoch, clip_grad)
         
-        Metrics.plot_metrics(Acc, Loss)
+        plot_metrics(Acc, Loss)
 
 
     def epoch(self, inputs, targets, eta, loss_type, clip_grad): 
@@ -92,12 +96,13 @@ class Sequential:
             in_x = inputs
 
         if loss_type == "MSE":
-
+            h = np.zeros(out_h.size)
+            h[np.argmax(out_h)] = 1
             errors = np.array(out_h-targets)
             if errors.size > 1:
-                loss = np.matmul(errors, np.transpose(errors))/2
+                loss = np.matmul(np.array(h-targets), np.transpose(np.array(h-targets)))/2
             else:
-                loss = np.square(errors)/2
+                loss = np.square(np.array(h-targets))/2
 
             self.small_delta[len(self.sequence)-2] = np.multiply(layer.activation_deriv(out_s),errors)
             self.small_delta[len(self.sequence)-2] = (self.small_delta[len(self.sequence)-2]).reshape((self.small_delta[len(self.sequence)-2]).size, 1) # transposed reshape
@@ -118,7 +123,7 @@ class Sequential:
             if p < 0.00001:
                 p = 0.00001 # to avoid 0 division
             loss = -np.log(p) 
-            
+
             self.small_delta[len(self.sequence)-2] = -(1 - p)*targets
             delta = self.small_delta[len(self.sequence)-2]
             
@@ -167,6 +172,7 @@ class Sequential:
             layer.b = np.clip(layer.b, -1, 1)
 
         return loss
+
 
                         
                     
