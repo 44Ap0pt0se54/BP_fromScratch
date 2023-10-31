@@ -55,10 +55,7 @@ class Sequential:
             targets = encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
             targets = train_labels
-        old = self.sequence[1].w
         for epoch in range(num_epochs):
-            print(old.all == self.sequence[1].w.all)
-            old = self.sequence[1].w
             if batch_size == None:
                 for batch, target in zip(inputs, targets):
                     loss = self.epoch(batch, target, eta, loss_type, clip_grad)
