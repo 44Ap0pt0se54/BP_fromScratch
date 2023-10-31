@@ -8,11 +8,13 @@ class Dense:
         self.size = units
         self.activation_type = activation_func 
 
-    def build(self, input_shape):
-        random_values = np.random.normal(0, 1, size=input_shape*self.units) # Gaussian initialization
-        self.w = random_values.reshape(input_shape, self.units)
+    def build(self, input_size):
+        #random_values = np.random.normal(0, 1, size=input_size*self.units) # Gaussian initialization
+        # Xavier initialization
+        random_values = np.random.uniform(-np.sqrt(6/(input_size+self.units)), np.sqrt(6/(input_size+self.units)), size=input_size * self.units)
+        self.w = random_values.reshape(input_size, self.units)
         self.b = np.random.normal(0, 1, size=self.units).reshape(1, self.units)
-        self.input_size = input_shape
+        self.input_size = input_size
 
     def call_act(self, inputs):
         return np.array(self.activation(np.matmul(inputs, self.w) + self.b)) # y=f(s)=h
@@ -33,8 +35,14 @@ class Dense:
 
     def activation_deriv(self, input):
 
-        if self.activation_type == "relu" or self.activation_type == "linear":
+        if self.activation_type == "linear":
             return np.ones(input.size)
+        elif self.activation_type == "relu":
+            a = np.zeros(input.size)
+            for i in range(input.size):
+                if input[0,i]>=0:
+                    a[i]=1
+            return a
         elif self.activation_type =="sigmoid":
             return self.sigmoid_deriv(input)
 
