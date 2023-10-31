@@ -17,9 +17,9 @@ class Sequential:
             self.sequence[index].build(self.sequence[index-1].size)
 
     def normalize_array(self, arr):
-        arr = np.round(arr, 6)
-        arr[arr > 10e6] = 10e6
-        arr[arr < 10e-6] = 10e-6
+        arr = np.round(arr, 10)
+        arr[arr > 1] = 1
+        arr[arr < -1] = -1
         return arr
 
     def feed(self, inputs, layer_index):
@@ -44,7 +44,7 @@ class Sequential:
             pred.append(self.feed(input, len(self.sequence)))
         return pred
 
-    def fit(self, inputs, train_labels, eta, num_epochs, batch_size, loss_type, plot):
+    def fit(self, inputs, train_labels, eta, num_epochs, batch_size, loss_type, plot, clip_grad):
         if plot!=None:
             Loss=np.zeros(num_epochs)
             Acc=[]
@@ -52,34 +52,37 @@ class Sequential:
             Rec=[]
 
         if loss_type == "CategoricalCrossEntropy":
-            targets = Preprocessing.encode(train_labels, self.sequence[-1].units) # label encoding
+            targets = encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
             targets = train_labels
-
+        old = self.sequence[1].w
         for epoch in range(num_epochs):
+            print(old.all == self.sequence[1].w.all)
+            old = self.sequence[1].w
             if batch_size == None:
                 for batch, target in zip(inputs, targets):
-                    loss = self.epoch(batch, target, eta, loss_type)
+                    loss = self.epoch(batch, target, eta, loss_type, clip_grad)
                     if plot!=None:
                         Loss[epoch] = Loss[epoch] + loss
-
+            
                 if plot!=None:        
-                    acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                    acc, pre, rec, f1 = metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
                     Acc.append(acc)
                     Pre.append(pre)
                     Rec.append(rec)
+                print("epoch ", epoch, " passed")
 
             else:
                 shuffle_index = np.random.permutation(batch_size)
                 examples = inputs[shuffle_index, :]
                 labels = targets[shuffle_index]
                 for batch, target in zip(examples, labels):
-                    self.epoch(batch, target, eta, loss_type, epoch)
+                    self.epoch(batch, target, eta, loss_type, epoch, clip_grad)
         
-        Metrics.plot_metrics(Acc, Loss)
+        plot_metrics(Acc, Loss)
 
 
-    def epoch(self, inputs, targets, eta, loss_type): # + METRIC, OPTIMIZER
+    def epoch(self, inputs, targets, eta, loss_type, clip_grad): 
         
         assert(len(self.sequence)>1) # layer 0 refers to input layer
         layer = (self.sequence[-1])
@@ -102,28 +105,30 @@ class Sequential:
             delta = self.small_delta[len(self.sequence)-2]
 
             if delta.size == 1:
-                layer.w = layer.w - (eta)*np.transpose(delta*in_x)
-                layer.b = layer.b - (eta)*delta*np.ones((layer.b).size)
+                layer.w = layer.w - (eta)*np.clip(np.transpose(delta*in_x), -clip_grad, clip_grad)
+                layer.b = layer.b - (eta)*np.clip(delta*np.ones((layer.b).size), -clip_grad, clip_grad)
             else:
-                layer.w = layer.w - (eta)*np.transpose(np.matmul(delta, in_x))
-                layer.b = layer.b - (eta)*np.transpose(delta)
+                layer.w = layer.w - (eta)*np.clip(np.transpose(np.matmul(delta, in_x)), -clip_grad, clip_grad)
+                layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
 
         elif loss_type == "CategoricalCrossEntropy":
 
             p = np.matmul(out_h, np.transpose(targets))
-            if p < 0.001:
-                p = 0.001 # to avoid 0 division
+            if p < 0.00001:
+                p = 0.00001 # to avoid 0 division
             loss = -np.log(p) 
-            
+            # print("out_h ", out_h)
+            # print("targets ", targets)
+            # print("proba ", p)
             self.small_delta[len(self.sequence)-2] = -(1 - p)*targets
             delta = self.small_delta[len(self.sequence)-2]
             
-            layer.w = layer.w - (eta)*np.outer(np.transpose(in_x), delta)
-            layer.b = layer.b - (eta)*delta
+            layer.w = layer.w - np.clip((eta)*np.outer(np.transpose(in_x), delta), -clip_grad, clip_grad)
+            layer.b = layer.b - np.clip((eta)*delta, -clip_grad, clip_grad)
 
-        layer.w = self.normalize_array(layer.w)
-        layer.b = self.normalize_array(layer.b)
+        layer.w = np.clip(layer.w, -1e1, 1e1)
+        layer.b = np.clip(layer.b, -1e1, 1e1)
                                                     
         for layer_index in reversed(range(1,len(self.sequence)-1)):
 
@@ -142,24 +147,28 @@ class Sequential:
                     self.small_delta[layer_index-1] = np.multiply(layer.activation_deriv(out_s).reshape(layer.activation_deriv(out_s).size, 1),np.matmul(layer_above.w,self.small_delta[layer_index]))
             
             elif loss_type == "CategoricalCrossEntropy":
+                #print(np.max(layer.call(inputs)) == np.max(out_s))
+                # print("max w ", np.max(layer.w))
+                # print("max out_s", np.max(out_s))
+                #print("max layer.activation_deriv(out_s/np.max(out_s)) ", np.max(layer.activation_deriv(out_s)))
                 self.small_delta[layer_index-1] = np.multiply(layer.activation_deriv(out_s).reshape(layer.activation_deriv(out_s).size, 1),np.matmul(layer_above.w,self.small_delta[layer_index].reshape(self.small_delta[layer_index].size, 1)))
 
             self.small_delta[layer_index-1] = (self.small_delta[layer_index-1]).reshape((self.small_delta[layer_index-1]).size, 1) # transposed reshape
 
             delta = self.small_delta[layer_index-1]
-             
+            #print("max delta ", np.max(delta))
+            #print("max - (eta)*np.transpose(delta*in_x), ", np.max(- (eta)*np.transpose(delta*in_x)))
             if delta.size == 1:
-                layer.w = layer.w - (eta)*np.transpose(delta*in_x)
-                layer.b = layer.b - (eta)*delta*np.ones((layer.b).size)
+                layer.w = layer.w - (eta)*np.clip(np.transpose(delta*in_x), -clip_grad, clip_grad)
+                layer.b = layer.b - (eta)*np.clip((delta*np.ones((layer.b).size)), -clip_grad, clip_grad)
             else:
-                layer.w = layer.w - (eta)*np.transpose(np.outer(delta, in_x))
-                layer.b = layer.b - (eta)*np.transpose(delta)
+                layer.w = layer.w - (eta)*np.clip(np.transpose(np.outer(delta, in_x)), -clip_grad, clip_grad)
+                layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
-            layer.w = self.normalize_array(layer.w)
-            layer.b = self.normalize_array(layer.b)
+            layer.w = np.clip(layer.w, -1e1, 1e1)
+            layer.b = np.clip(layer.b, -1e1, 1e1)
 
         return loss
-
 
                         
                     
