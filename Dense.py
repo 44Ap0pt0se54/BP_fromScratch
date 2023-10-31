@@ -45,12 +45,17 @@ class Dense:
             return a
         elif self.activation_type =="sigmoid":
             return self.sigmoid_deriv(input)
+        elif self.activation_type =="softmax":
+            return self.softmax_deriv(input)
 
     def sigmoid(self, x):
         return np.array([1/(1 + np.exp(-y)) for y in x])
 
     def sigmoid_deriv(self, x):
         return np.array([self.sigmoid(y)*(1-self.sigmoid(y)) for y in x])
+    
+    def softmax_deriv(self, x):
+        return np.multiply(self.softmax(x),(1-self.softmax(x)))
 
     def softmax(self, x):                           # interesting overflow caused by exp
         x[x > 1e2] = 1e2
