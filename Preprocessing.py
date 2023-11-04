@@ -9,16 +9,13 @@ def encode(labels, num_classes):
         one_hot_vectors.append(identity_matrix[int(label)])
     return np.array(one_hot_vectors)
 
-def dataSet(imageData, labelData, shuffle):
-
-    n_data_points = 4000
-    n_slices = n_data_points // 400  # Number of slices
+def dataSet(imageData, labelData, shuffle, val):
 
     train_images = []
     train_labels = []
 
-    for i in range(n_slices):
-        start_index = i * 400 + 100
+    for i in range(10):
+        start_index = i * 500 + 100
         end_index = start_index + 400
     
         train_images_slice = imageData[start_index:end_index, :]
@@ -30,14 +27,11 @@ def dataSet(imageData, labelData, shuffle):
     train_images = np.concatenate(train_images, axis=0)
     train_labels = np.concatenate(train_labels, axis=0)
 
-    n_data_points = 4000
-    n_slices = n_data_points // 100  # Number of slices
-
     test_images = []
     test_labels = []
 
-    for i in range(n_slices):
-        start_index = i * 100
+    for i in range(10):
+        start_index = i * 500
         end_index = start_index + 100
     
         test_images_slice = imageData[start_index:end_index, :]
@@ -59,7 +53,14 @@ def dataSet(imageData, labelData, shuffle):
         train_images = train_images[shuffle_index, :]
         train_labels = train_labels[shuffle_index]
 
-    return train_images, train_labels, test_images, test_labels
+    if val!=None:
+        val_images = train_images[:int(val*4000), :]
+        val_labels = train_labels[:int(val*4000)]
+
+        train_images = train_images[int(val*4000):, :]
+        train_labels = train_labels[int(val*4000):]
+
+    return train_images, train_labels, test_images, test_labels, val_images, val_labels
 
 
 
