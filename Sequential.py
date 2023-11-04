@@ -11,11 +11,12 @@ class Sequential:
     def add(self, layer):
         self.sequence.append(layer)
 
-    def compile(self):
+    def compile(self, set_adam, eta):
         self.small_delta = [0 for i in range(len(self.sequence)-1)]
+        self.set_adam = set_adam
 
         for index in range(1,len(self.sequence)):
-            self.sequence[index].build(self.sequence[index-1].size)
+            self.sequence[index].build(self.sequence[index-1].size, set_adam, eta)
 
     def normalize_array(self, arr):
         arr = np.round(arr, 10)
@@ -45,22 +46,30 @@ class Sequential:
             pred.append(self.feed(input, len(self.sequence)))
         return pred
 
-    def fit(self, inputs, train_labels, eta, num_epochs, batch_size, loss_type, plot, clip_grad):
+    def fit(self, inputs, train_labels, eta, num_epochs, batch_size, loss_type, plot, clip_grad, validation_set):
         if plot!=None:
             Loss=np.zeros(num_epochs)
             Acc=[]
             Pre=[]
             Rec=[]
+            val_Acc=None
+            if validation_set!=None:
+                val_Acc=[]
 
+        time = 1 # for Adam optimizer
         if loss_type == "CategoricalCrossEntropy":
             targets = Preprocessing.encode(train_labels, self.sequence[-1].units) # label encoding
         elif loss_type == "MSE":
-            targets = Preprocessing.encode(train_labels, self.sequence[-1].units) ##### replace by train_labels if not classification problem
+            if inputs.size == train_labels.size:
+                targets = train_labels
+            else:
+                targets = Preprocessing.encode(train_labels, self.sequence[-1].units) ##### replace by train_labels if not classification problem   
         for epoch in range(num_epochs):
             progress_bar = tqdm(total=inputs[:,0].size, position=0, leave=True, desc="Epoch "+str(epoch+1)+"/"+str(num_epochs))
             if batch_size == None:
                 for batch, target in zip(inputs, targets):
-                    loss = self.epoch(batch, target, eta, loss_type, clip_grad)
+                    loss = self.epoch(batch, target, eta, loss_type, clip_grad, time)
+                    time+=1
                     progress_bar.update(1)
                     if plot!=None:
                         Loss[epoch] = Loss[epoch] + loss/inputs[:,0].size
@@ -68,23 +77,58 @@ class Sequential:
                 progress_bar.close()
                 print("Epoch ", epoch+1, " completed")
             
-                if plot!=None:        
-                    acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                if plot!=None:
+                    if inputs.size == train_labels.size:
+                        acc, pre, rec, f1 = Metrics.metrics(train_labels, self.predict(inputs))
+                    else:
+                        acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                    
                     Acc.append(acc)
                     Pre.append(pre)
                     Rec.append(rec)
 
+                    if validation_set != None:
+                        if inputs.size == train_labels.size:
+                            acc, pre, rec, f1 = Metrics.metrics(validation_set[1], self.predict(validation_set[0]))
+                        else:
+                            acc, pre, rec, f1 = Metrics.metrics(validation_set[1], [np.argmax(arr) for arr in self.predict(validation_set[0])])
+                        val_Acc.append(acc)
             else:
                 shuffle_index = np.random.permutation(batch_size)
                 examples = inputs[shuffle_index, :]
                 labels = targets[shuffle_index]
                 for batch, target in zip(examples, labels):
-                    self.epoch(batch, target, eta, loss_type, epoch, clip_grad)
+                    loss = self.epoch(batch, target, eta, loss_type, clip_grad, time)
+                    time+=1
+                    progress_bar.update(1)
+                    if plot!=None:
+                        Loss[epoch] = Loss[epoch] + loss/examples[:,0].size
+
+                progress_bar.close()
+                print("Epoch ", epoch+1, " completed")
+            
+                if plot!=None:    
+                    if inputs.size == train_labels.size:
+                        acc, pre, rec, f1 = Metrics.metrics(train_labels, self.predict(inputs))
+                    else:
+                        acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
+                    
+                    Acc.append(acc)
+                    Pre.append(pre)
+                    Rec.append(rec)
+
+                    if validation_set != None:
+                        if inputs.size == train_labels.size:
+                            acc, pre, rec, f1 = Metrics.metrics(validation_set[1], self.predict(validation_set[0]))
+                        else:
+                            acc, pre, rec, f1 = Metrics.metrics(validation_set[1], [np.argmax(arr) for arr in self.predict(validation_set[0])])
+                        val_Acc.append(acc)
         
         Metrics.plot_metrics(Acc, Loss)
+        Metrics.plot_error_frac(Acc, val_Acc)
 
 
-    def epoch(self, inputs, targets, eta, loss_type, clip_grad): 
+    def epoch(self, inputs, targets, eta, loss_type, clip_grad, time): 
         
         assert(len(self.sequence)>1) # layer 0 refers to input layer
         layer = (self.sequence[-1])
@@ -111,11 +155,17 @@ class Sequential:
             delta = self.small_delta[len(self.sequence)-2]
 
             if delta.size == 1:
-                layer.w = layer.w - (eta)*np.clip(np.transpose(delta*in_x), -clip_grad, clip_grad)
-                layer.b = layer.b - (eta)*np.clip(delta*np.ones((layer.b).size), -clip_grad, clip_grad)
+                if self.set_adam:
+                    layer.adam.update(t=time, layer=layer, dw=np.transpose(delta*in_x), db=delta*np.ones((layer.b).size))
+                else:
+                    layer.w = layer.w - (eta)*np.clip(np.transpose(delta*in_x), -clip_grad, clip_grad)
+                    layer.b = layer.b - (eta)*np.clip(delta*np.ones((layer.b).size), -clip_grad, clip_grad)
             else:
-                layer.w = layer.w - (eta)*np.clip(np.transpose(np.matmul(delta, in_x)), -clip_grad, clip_grad)
-                layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
+                if self.set_adam:
+                    layer.adam.update(t=time, layer=layer, dw=np.transpose(np.matmul(delta, in_x)), db=np.transpose(delta))
+                else:
+                    layer.w = layer.w - (eta)*np.clip(np.transpose(np.matmul(delta, in_x)), -clip_grad, clip_grad)
+                    layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
 
         elif loss_type == "CategoricalCrossEntropy":
@@ -163,11 +213,17 @@ class Sequential:
             #print("max delta ", np.max(delta))
             #print("max - (eta)*np.transpose(delta*in_x), ", np.max(- (eta)*np.transpose(delta*in_x)))
             if delta.size == 1:
-                layer.w = layer.w - (eta)*np.clip(np.transpose(delta*in_x), -clip_grad, clip_grad)
-                layer.b = layer.b - (eta)*np.clip((delta*np.ones((layer.b).size)), -clip_grad, clip_grad)
+                if self.set_adam:
+                    layer.adam.update(t=time, layer=layer, dw=np.transpose(delta*in_x), db=delta*np.ones((layer.b).size))
+                else:
+                    layer.w = layer.w - (eta)*np.clip(np.transpose(delta*in_x), -clip_grad, clip_grad)
+                    layer.b = layer.b - (eta)*np.clip((delta*np.ones((layer.b).size)), -clip_grad, clip_grad)
             else:
-                layer.w = layer.w - (eta)*np.clip(np.transpose(np.outer(delta, in_x)), -clip_grad, clip_grad)
-                layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
+                if self.set_adam:
+                    layer.adam.update(t=time, layer=layer, dw=np.transpose(np.outer(delta, in_x)), db=np.transpose(delta))
+                else:
+                    layer.w = layer.w - (eta)*np.clip(np.transpose(np.outer(delta, in_x)), -clip_grad, clip_grad)
+                    layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
             layer.w = np.clip(layer.w, -1, 1)
             layer.b = np.clip(layer.b, -1, 1)
