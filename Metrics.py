@@ -17,8 +17,7 @@ def metrics(Ytrue, Ypred):
     # precision = tp / (tp + fp)
     # recall = tp / (tp + fn)
     # f1 = (2 * precision * recall) / (precision + recall)
-
-        if Ytrue[i] == Ypred[i]:
+        if Ytrue[i].all == Ypred[i].all:
             score+=1
     accuracy = score/len(Ytrue)
     precision, recall, f1 = 0, 0, 0
@@ -41,3 +40,32 @@ def plot_metrics(Acc, Loss):
 
     plt.show()
     #plt.savefig('AccuracyNLoss.png')
+
+def plot_error_frac(Acc, val_Acc):
+
+    fig = plt.figure()
+    plt.xlim([1, len(Acc)])
+    plt.plot(np.ones(len(Acc))-Acc, color='b',label="training")
+    if val_Acc!=None:
+        plt.plot(np.ones(len(val_Acc))-val_Acc, color='g',label="validation")
+    plt.legend()
+    plt.xlabel("Epoch")
+    plt.title('Error fraction')
+    plt.show()
+    #plt.savefig('ErrorFrac.png')
+
+def plot_confusion_matrix(prediction, labels, title):
+    mat = np.zeros(100).reshape(10, 10)
+    for i in range(len(prediction)):
+        mat[int(labels[i])][prediction[i]] = mat[int(labels[i])][prediction[i]]+1
+
+    fig, ax = plt.subplots()
+    cax = ax.imshow(mat, cmap='viridis', interpolation='nearest')
+    cbar = fig.colorbar(cax)
+    plt.xlabel("Predictions")
+    plt.ylabel("True labels")
+    plt.title(title)
+    plt.yticks(np.arange(10), np.arange(10))
+    plt.xticks(np.arange(10), np.arange(10))
+    plt.show()
+    #plt.savefig(title)
