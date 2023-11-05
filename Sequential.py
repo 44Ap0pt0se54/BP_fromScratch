@@ -145,9 +145,9 @@ class Sequential:
             h[np.argmax(out_h)] = 1
             errors = np.array(out_h-targets)
             if errors.size > 1:
-                loss = np.matmul(np.array(h-targets), np.transpose(np.array(h-targets)))/2
+                loss = np.matmul(np.array(out_h-targets), np.transpose(np.array(out_h-targets)))/2
             else:
-                loss = np.square(np.array(h-targets))/2
+                loss = np.square(np.array(out_h-targets))/2
 
             self.small_delta[len(self.sequence)-2] = np.multiply(layer.activation_deriv(out_s),errors)
             self.small_delta[len(self.sequence)-2] = (self.small_delta[len(self.sequence)-2]).reshape((self.small_delta[len(self.sequence)-2]).size, 1) # transposed reshape
