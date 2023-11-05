@@ -1,4 +1,4 @@
-from BP_fromScratch import Dense, Input, Preprocessing, Metrics
+from BP_fromScratch import Dense, Input, Preprocessing, Metrics, Adam
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
