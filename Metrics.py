@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 def metrics(Ytrue, Ypred):
     tp, tn, fp, fn, score = 0, 0, 0, 0, 0
