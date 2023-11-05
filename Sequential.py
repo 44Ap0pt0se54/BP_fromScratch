@@ -78,21 +78,16 @@ class Sequential:
                 print("Epoch ", epoch+1, " completed")
             
                 if plot!=None:
-                    if inputs.size == train_labels.size:
-                        acc, pre, rec, f1 = Metrics.metrics(train_labels, self.predict(inputs))
-                    else:
+                    if inputs.size != train_labels.size:
                         acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
-                    
-                    Acc.append(acc)
-                    Pre.append(pre)
-                    Rec.append(rec)
+                        Acc.append(acc)
+                        Pre.append(pre)
+                        Rec.append(rec)
 
                     if validation_set != None:
-                        if inputs.size == train_labels.size:
-                            acc, pre, rec, f1 = Metrics.metrics(validation_set[1], self.predict(validation_set[0]))
-                        else:
+                        if inputs.size != train_labels.size:
                             acc, pre, rec, f1 = Metrics.metrics(validation_set[1], [np.argmax(arr) for arr in self.predict(validation_set[0])])
-                        val_Acc.append(acc)
+                            val_Acc.append(acc)
             else:
                 shuffle_index = np.random.permutation(batch_size)
                 examples = inputs[shuffle_index, :]
@@ -108,25 +103,19 @@ class Sequential:
                 print("Epoch ", epoch+1, " completed")
             
                 if plot!=None:    
-                    if inputs.size == train_labels.size:
-                        acc, pre, rec, f1 = Metrics.metrics(train_labels, self.predict(inputs))
-                    else:
+                    if inputs.size != train_labels.size:
                         acc, pre, rec, f1 = Metrics.metrics(train_labels, [np.argmax(arr) for arr in self.predict(inputs)])
-                    
-                    Acc.append(acc)
-                    Pre.append(pre)
-                    Rec.append(rec)
+                        Acc.append(acc)
+                        Pre.append(pre)
+                        Rec.append(rec)
 
                     if validation_set != None:
-                        if inputs.size == train_labels.size:
-                            acc, pre, rec, f1 = Metrics.metrics(validation_set[1], self.predict(validation_set[0]))
-                        else:
+                        if inputs.size != train_labels.size:
                             acc, pre, rec, f1 = Metrics.metrics(validation_set[1], [np.argmax(arr) for arr in self.predict(validation_set[0])])
-                        val_Acc.append(acc)
+                            val_Acc.append(acc)
         
         Metrics.plot_metrics(Acc, Loss)
         Metrics.plot_error_frac(Acc, val_Acc)
-
 
     def epoch(self, inputs, targets, eta, loss_type, clip_grad, time): 
         
