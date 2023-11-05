@@ -8,13 +8,16 @@ class Dense:
         self.size = units
         self.activation_type = activation_func 
 
-    def build(self, input_size):
+    def build(self, input_size, set_adam, eta):
         #random_values = np.random.normal(0, 1, size=input_size*self.units) # Gaussian initialization
         # Xavier initialization
         random_values = np.random.uniform(-np.sqrt(6/(input_size+self.units)), np.sqrt(6/(input_size+self.units)), size=input_size * self.units)
         self.w = random_values.reshape(input_size, self.units)
         self.b = np.random.normal(0, 1, size=self.units).reshape(1, self.units)
         self.input_size = input_size
+
+        if set_adam:
+            self.adam = Adam(input_size, self.units, eta, beta1=0.9, beta2=0.999, epsilon=1e-8)
 
     def call_act(self, inputs):
         return np.array(self.activation(np.matmul(inputs, self.w) + self.b)) # y=f(s)=h
