@@ -19,9 +19,8 @@ def metrics(Ytrue, Ypred):
     # recall = tp / (tp + fn)
     # f1 = (2 * precision * recall) / (precision + recall)
         print(np.sqrt(np.matmul(Ytrue[i]-Ypred[i], np.transpose(Ytrue[i]-Ypred[i]))))
-        if np.sqrt(np.matmul(Ytrue[i]-Ypred[i], np.transpose(Ytrue[i]-Ypred[i])))<0.1:
-            score+=1
-    accuracy = score/len(Ytrue)
+        score+= 1-np.sqrt(np.matmul(Ytrue[i]-Ypred[i], np.transpose(Ytrue[i]-Ypred[i])))
+    accuracy = score/(2*len(Ytrue))
     precision, recall, f1 = 0, 0, 0
 
     return accuracy, precision, recall, f1
