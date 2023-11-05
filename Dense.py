@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from BP_fromScratch import Adam
 
 class Dense:
 
@@ -17,7 +18,7 @@ class Dense:
         self.input_size = input_size
 
         if set_adam:
-            self.adam = Adam(input_size, self.units, eta, beta1=0.9, beta2=0.999, epsilon=1e-8)
+            self.adam = Adam.Adam(input_size, self.units, eta, beta1=0.9, beta2=0.999, epsilon=1e-8)
 
     def call_act(self, inputs):
         return np.array(self.activation(np.matmul(inputs, self.w) + self.b)) # y=f(s)=h
