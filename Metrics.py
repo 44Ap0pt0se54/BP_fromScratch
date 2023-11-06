@@ -34,7 +34,7 @@ def plot_metrics(Acc, Loss):
 
     # First subplot
     plt.subplot(2, 1, 1)
-    plt.plot(Loss)
+    plt.plot(np.arange(1, len(Loss)+1),Loss)
     plt.title('Loss')
 
     # Second subplot
