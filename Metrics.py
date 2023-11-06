@@ -24,6 +24,9 @@ def metrics(Ytrue, Ypred):
     precision, recall, f1 = 0, 0, 0
 
     return accuracy, precision, recall, f1
+    
+def loss_SE(Ytrue, Ypred):
+    return np.matmul(Ytrue-Ypred,np.transpose(Ytrue-Ypred))
 
 def plot_metrics(Acc, Loss):
 
