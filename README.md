@@ -1,2 +1,2 @@
 # BP_fromScratch
-Back propagation implementation from scratch
+Back propagation implementation from scratch.
