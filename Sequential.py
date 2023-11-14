@@ -225,7 +225,7 @@ class Sequential:
         mat = np.loadtxt(f"layer{layer_index}")
         return mat
 
-    def LMSfit(self, inputs, train_labels, eta, num_epochs, batch_size, loss_type, plot, clip_grad, validation_set)
+    def LMSfit(self, inputs, train_labels, eta, num_epochs, batch_size, loss_type, plot, clip_grad, validation_set):
         if plot!=None:
             Loss=np.zeros(num_epochs)
             Acc=[]
