@@ -57,9 +57,8 @@ class SOFM:
             output_mat = output_mat/inputs[:,0].size
             plt.imshow(output_mat.reshape(self.n, self.m), cmap='viridis', interpolation='nearest')
             plt.colorbar()
-            plt.title('Activation Matrix')
-            #plt.show()
-            plt.savefig("activ_mat.png")
+            plt.title('Activation Map')
+            plt.show()
             
 
     def epoch(self, batch, eta_0, time, batch_size, progress_bar):
