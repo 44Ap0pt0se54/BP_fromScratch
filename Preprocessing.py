@@ -62,5 +62,12 @@ def dataSet(imageData, labelData, shuffle, val):
 
     return train_images, train_labels, test_images, test_labels, val_images, val_labels
 
+def min_max_normalization(data):
+    data = np.array(data)
+    min_val = np.min(data)
+    max_val = np.max(data)
+    normalized_data = (data - min_val) / (max_val - min_val)
+    return normalized_data
+
 
 
