@@ -149,9 +149,9 @@ class Sequential:
                     layer.b = layer.b - (eta)*np.clip(delta*np.ones((layer.b).size), -clip_grad, clip_grad)
             else:
                 if self.set_adam:
-                    layer.adam.update(t=time, layer=layer, dw=np.transpose(np.matmul(delta, in_x)), db=np.transpose(delta))
+                    layer.adam.update(t=time, layer=layer, dw=np.transpose(np.outer(delta, in_x)), db=np.transpose(delta))
                 else:
-                    layer.w = layer.w - (eta)*np.clip(np.transpose(np.matmul(delta, in_x)), -clip_grad, clip_grad)
+                    layer.w = layer.w - (eta)*np.clip(np.transpose(np.outer(delta, in_x)), -clip_grad, clip_grad)
                     layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
 
@@ -329,9 +329,9 @@ class Sequential:
                     layer.b = layer.b - (eta)*np.clip(delta*np.ones((layer.b).size), -clip_grad, clip_grad)
             else:
                 if self.set_adam:
-                    layer.adam.update(t=time, layer=layer, dw=np.transpose(np.matmul(delta, in_x)), db=np.transpose(delta))
+                    layer.adam.update(t=time, layer=layer, dw=np.transpose(np.outer(delta, in_x)), db=np.transpose(delta))
                 else:
-                    layer.w = layer.w - (eta)*np.clip(np.transpose(np.matmul(delta, in_x)), -clip_grad, clip_grad)
+                    layer.w = layer.w - (eta)*np.clip(np.transpose(np.outer(delta, in_x)), -clip_grad, clip_grad)
                     layer.b = layer.b - (eta)*np.clip(np.transpose(delta), -clip_grad, clip_grad)
 
 
